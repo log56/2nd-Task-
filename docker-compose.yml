@@ -1,0 +1,66 @@
+services:
+  mysql:
+    image: mysql:8.0
+    expose:
+      - "3306"
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=database
+      - MYSQL_USER=username
+      - MYSQL_PASSWORD=password
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - appnet
+
+  frontend:
+    build: frontend
+    ports:
+      - "5050:80"
+    depends_on:
+      - mysql
+      - backend
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - appnet
+
+  backend:
+    build: backend
+    ports:
+      - "80:80"
+    depends_on:
+      - mysql
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - appnet
+
+  selenoid:
+    image: aerokube/selenoid
+    ports:
+      - "4444:4444"
+    volumes:
+      - ./selenoid:/etc/selenoid
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - appnet
+
+  selenoid-ui:
+    image: aerokube/selenoid-ui
+    ports:
+      - "8081:8080"
+    command: ["-allowed-origin", "*", "--selenoid-uri", "http://selenoid:4444"]
+    depends_on:
+      - selenoid
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    name: appnet
+
+volumes:
+  mysql-data:
